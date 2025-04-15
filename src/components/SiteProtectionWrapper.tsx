@@ -8,6 +8,12 @@ export function SiteProtectionWrapper({ children }: { children: ReactNode }) {
   const { isAuthenticated } = usePasswordContext();
   const [isSiteProtected, setIsSiteProtected] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  // Fix hydration issues by ensuring we only render once component is mounted client-side
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     // Check if site protection is enabled
@@ -25,8 +31,15 @@ export function SiteProtectionWrapper({ children }: { children: ReactNode }) {
       }
     };
 
-    checkSiteProtection();
-  }, []);
+    if (mounted) {
+      checkSiteProtection();
+    }
+  }, [mounted]);
+
+  // On server-side or before hydration, render children to avoid mismatch
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   if (isLoading) {
     return (
@@ -36,7 +49,8 @@ export function SiteProtectionWrapper({ children }: { children: ReactNode }) {
     );
   }
 
-  if (isSiteProtected && !isAuthenticated) {
+  // If the site is protected and the user is not authenticated or authentication state is null
+  if (isSiteProtected && (!isAuthenticated || isAuthenticated === null)) {
     return <PasswordProtection />;
   }
 
