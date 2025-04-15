@@ -2,8 +2,13 @@ import NextAuth from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Add debug handler that wraps NextAuth
-async function debugHandler(req: NextRequest, context: any) {
+/**
+ * Debug handler for Next Auth
+ */
+async function authHandler(
+  req: NextRequest,
+  { params }: { params: { nextauth: string[] } }
+) {
   console.log('NextAuth API route called', {
     method: req.method,
     url: req.url,
@@ -12,7 +17,7 @@ async function debugHandler(req: NextRequest, context: any) {
   
   try {
     const handler = NextAuth(authOptions);
-    const response = await handler(req, context);
+    const response = await handler(req, { params });
     console.log('NextAuth response status:', response.status);
     return response;
   } catch (error) {
@@ -24,4 +29,5 @@ async function debugHandler(req: NextRequest, context: any) {
   }
 }
 
-export { debugHandler as GET, debugHandler as POST };
+// Export GET and POST handlers
+export { authHandler as GET, authHandler as POST };
