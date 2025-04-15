@@ -3,24 +3,25 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface PasswordContextType {
-  isAuthenticated: boolean;
+  isAuthenticated: boolean | null;
   setIsAuthenticated: (value: boolean) => void;
 }
 
 const PasswordContext = createContext<PasswordContextType | undefined>(undefined);
 
 export function PasswordProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Start with undefined to avoid hydration mismatch
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Read from localStorage on initial load (client side only)
   useEffect(() => {
     try {
       const hasAuthenticated = localStorage.getItem('gabriel-site-auth') === 'true';
-      console.log('Site password auth state from localStorage:', hasAuthenticated);
       setIsAuthenticated(hasAuthenticated);
     } catch (error) {
       console.error('Error accessing localStorage:', error);
+      setIsAuthenticated(false); // Fallback if localStorage fails
     } finally {
       setIsInitialized(true);
     }
@@ -28,9 +29,8 @@ export function PasswordProvider({ children }: { children: ReactNode }) {
 
   // Update localStorage when authentication state changes
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && isAuthenticated !== null) {
       try {
-        console.log('Setting site password auth in localStorage:', isAuthenticated);
         if (isAuthenticated) {
           localStorage.setItem('gabriel-site-auth', 'true');
         } else {
@@ -42,10 +42,12 @@ export function PasswordProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, isInitialized]);
 
+  // Cast isAuthenticated to boolean for components that use it before it's initialized
+  // When null, treat as not authenticated
   return (
     <PasswordContext.Provider
       value={{
-        isAuthenticated,
+        isAuthenticated: isAuthenticated === null ? false : isAuthenticated,
         setIsAuthenticated,
       }}
     >
